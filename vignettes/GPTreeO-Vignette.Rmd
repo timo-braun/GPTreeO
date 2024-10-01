@@ -1,0 +1,53 @@
+---
+title: "wrapper creation tutorial"
+output: pdf_document
+fig_caption: yes
+vignette: >
+  %\VignetteIndexEntry{GPTreeO-Vignette}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Creating a wrapper for a new GP package
+
+This vignette serves as a tutorial on how to create a new wrapper for a GP package by editing the file \texttt{WrappedGP.R}, turning it into the wrapper for a new GP package. The file is essentially a copy of the file \texttt{WrappedmlegpGP.R}, a wrapper for the \texttt{mlegp} package. We assume that the user has some knowledge of GP implementations in R.  
+We require the following methods for the new GP package:  
+
+* Create a new GP  
+* Make a prediction for a new data point with a given GP create by the package, returning the mean and the error  
+* Store the covariance function of the GP
+
+First, we describe a minimum version which goes over all necessary changes. Afterwards, we point the user to more advanced implementations which can be found in \texttt{WrappedDiceKrigingGP.R}.  
+
+## Changes in \texttt{CreateWrappedGP.R}
+
+* Change the name of the package in \texttt{CreateWrappedGP.R} by replacing "dummy" with the name of the package
+
+## Changes in \texttt{WrappedGP.r}
+
+* Change \verb|gp_control| in line 109. Here, we mean all arguments which are \textbf{not} the design matrix texttt{X}, the target variable \texttt{y} or it's uncertainties \verb|y_var|. These include e.g. the covariance function, parameters for the optimizer, etc.  
+* Update the method \verb|update_init_covpars| in l.170. In a \texttt{gp} from \texttt{mlegp}, the length scales of each dimension are stored under \verb|gp$beta|. The standard deviation of the whole GP is stored under \verb|gp$sig2|, and the (constant) mean under \verb|gp$mu[1]|.  
+* Update the method \verb|get_lengthscales| in l. 180. Use the same location that you used for the length scales in \verb|update_init_covpars|.  
+* Update the method \verb|get_cov_mat| in l.224. Replace the argument of the return function in l. 229 with the location of the covariance function in the \texttt{gp} object.  
+* Update the method \verb|call_create_gp| in l. 317. Start by replacing the method which creates the GP \texttt{mlegp::mlegp} in l.321 with the one of the new package. Update the control parameters, too.  
+* Update the method \verb|call_predict| in l. 356. Start by replacing the method \verb|mlegp::predict.gp| and it's arguments used to define \texttt{predictions} in l. 358 and 366. Then, replace the locations of the mean and standard error in the \texttt{prediction} in l. 363 and 371. In \texttt{mlegp}, the mean is stored under \verb|prediction$fit|, and the standard error under \verb|prediction$se.fit|.  
+* Update the method \verb|predict| in l. 432. This step is only necessary if \verb|add_buffer_in_prediction = TRUE|. Update the temporary gp \verb|temp_gp| in l. 461 by changing the method for gp creation \texttt{mlegp::mlegp} and the control parameters.  
+
+## Optional and advanced features
+Subsequent features are not necessary for the proper function of the package. Since these aspects are highly dependent on the chosen package, we merely make the user aware of these features and point them to the code sections in \texttt{WrappedDiceKrigingGP.R}. 
+
+* Including the prediction uncertainty. This can simply achieved by effectively replacing \verb|X, y| in l. 322 and 462 in \texttt{WrappedGP.r} with \verb|X, y, y_var|, assuming that this is the proper order of the arguments in the new package.  
+* Including a retrain buffer. Here, the train function needs to be adapted. See the beginning of the \texttt{train} method in l. 352 - 367 in \texttt{WrappedDiceKrigingGP.R}.  
+* Create a GP with given covariance parameters. If the package allows it, the GP parameters can be set by the field \verb|init_covpars|. This can be seen in \texttt{WrappedDiceKrigingGP.R} in l. 562 - 576.  
+* Use bounds for GP parameters (i.e. length scales). This can be seen in \texttt{WrappedDiceKrigingGP.R} in l. 484 - 507.  
+
+<!-- MAKE PLAN FOR ON HOW TO FINISH STUFF TILL NEXT THURSDAY -->
+<!-- ADD DESCRIPTION OF OUTPUT (GPTree, GPNode) -->
+<!-- ADD PLOT OF ONE LEAF (WITH UNCERTAINTIES) -->
+<!-- COPY TEXT FROM DESCRIPTION TO MANUAL (ALSO ADD SLOTS) -->
+<!-- USE CODE FROM VIGNETTE TO MAKE TEST CASES (CHECK THAT MEAN IS CORRECT IN "0", GP DELETED IN "0", GP CREATED, ALL POINTS ARE FED TO TREE, NBAR IS CRRECT IN LEAF 0) -->
+
