@@ -107,6 +107,7 @@ WrappedDiceKrigingGP <- R6::R6Class("WrappedDiceKrigingGP",
         optim.method = "BFGS", # "BFGS", "gen"
         lower = NULL, # c(1e-3, 1e-3), # c(1e-3, 1e-3, 1e-3, 1e-3), # rep(1e-3, x_dim),  # NULL,
         upper = NULL, # c(100, 100),   # c(100, 100, 100, 100), # rep(100, x_dim),  # NULL,
+        use_default_var_param_bound = FALSE,  # Not a DiceKriging argument. Used to activate our own bounds for the kernel scaling factor.
         parinit = NULL,
         multistart = 1,
         gr = TRUE,
@@ -453,21 +454,23 @@ WrappedDiceKrigingGP <- R6::R6Class("WrappedDiceKrigingGP",
           upper <- self$gp_control$upper
         }
 
-        # If not already set by the user, add lower and upper bounds for the variance kernel parameter
-        if (length(lower) == self$x_dim) {
-          min_abs_y <- min(abs(y))
-          if (min_abs_y == 0) {
-            lower <- c(lower, 1e-4)
-          } else {
-            lower <- c(lower, 1e-5*min_abs_y)
+        if (!self$gp_control$use_default_var_param_bound) {
+          # If not already set by the user, add lower and upper bounds for the variance kernel parameter
+          if (length(lower) == self$x_dim) {
+            min_abs_y <- min(abs(y))
+            if (min_abs_y == 0) {
+              lower <- c(lower, 1e-4)
+            } else {
+              lower <- c(lower, 1e-5*min_abs_y)
+            }
           }
-        }
-        if (length(upper) == self$x_dim) {
-          max_abs_y <- max(abs(y))
-          if (max_abs_y == 0) {
-            upper <- c(upper, 10)
-          } else {
-            upper <- c(upper, 10*max_abs_y)
+          if (length(upper) == self$x_dim) {
+            max_abs_y <- max(abs(y))
+            if (max_abs_y == 0) {
+              upper <- c(upper, 10)
+            } else {
+              upper <- c(upper, 10*max_abs_y)
+            }
           }
         }
 
